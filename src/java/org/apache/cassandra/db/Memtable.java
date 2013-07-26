@@ -51,7 +51,7 @@ public class Memtable
     private static final Logger logger = LoggerFactory.getLogger(Memtable.class);
 
     // size in memory can never be less than serialized size
-    private static final double MIN_SANE_LIVE_RATIO = 1.0;
+    private static final double MIN_SANE_LIVE_RATIO = 0.1;
     // max liveratio seen w/ 1-byte columns on a 64-bit jvm was 19. If it gets higher than 64 something is probably broken.
     private static final double MAX_SANE_LIVE_RATIO = 64.0;
 
@@ -173,7 +173,7 @@ public class Memtable
 
                 if (newRatio < MIN_SANE_LIVE_RATIO)
                 {
-                    logger.warn("setting live ratio to minimum of 1.0 instead of {}", newRatio);
+                    logger.warn("setting live ratio to minimum of 0.1 instead of {}", newRatio);
                     newRatio = MIN_SANE_LIVE_RATIO;
                 }
                 if (newRatio > MAX_SANE_LIVE_RATIO)
