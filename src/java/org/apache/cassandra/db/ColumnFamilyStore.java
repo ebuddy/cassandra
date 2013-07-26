@@ -157,7 +157,7 @@ public class ColumnFamilyStore implements ColumnFamilyStoreMBean
 
 
     /** ratio of in-memory memtable size, to serialized size */
-    volatile double liveRatio = 1.0;
+    volatile double liveRatio = 0.1;
     /** ops count last time we computed liveRatio */
     private final AtomicLong liveRatioComputedAt = new AtomicLong(32);
 
