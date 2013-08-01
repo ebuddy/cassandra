@@ -17,7 +17,10 @@
  */
 package org.apache.cassandra.utils;
 
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -50,6 +53,8 @@ public class SlabAllocator extends Allocator
     private final AtomicReference<Region> currentRegion = new AtomicReference<Region>();
     private volatile int regionCount = 0;
     private AtomicLong unslabbed = new AtomicLong(0);
+
+    private final Queue<WeakReference<Region>> regionTracker = new ConcurrentLinkedQueue<WeakReference<Region>>();
 
     public ByteBuffer allocate(int size)
     {
@@ -100,6 +105,8 @@ public class SlabAllocator extends Allocator
                 // we won race - now we need to actually do the expensive allocation step
                 region.init();
                 regionCount++;
+                // track a weak reference to the region to check if it has been GC-ed already
+                regionTracker.add(new WeakReference<Region>(region));
                 logger.trace("{} regions now allocated in {}", regionCount, this);
                 return region;
             }
@@ -113,7 +120,12 @@ public class SlabAllocator extends Allocator
      */
     public long getMinimumSize()
     {
-        return unslabbed.get() + (regionCount - 1) * (long)REGION_SIZE;
+        long size = unslabbed.get();
+        // only count the regions that have not been GCed yet
+        for (WeakReference<Region> regionWeakReference : regionTracker) {
+            size += (regionWeakReference.get() != null) ? REGION_SIZE : 0;
+        }
+        return size;
     }
 
     /**
