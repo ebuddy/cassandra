@@ -19,6 +19,7 @@ package org.apache.cassandra.utils;
 
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -122,8 +123,14 @@ public class SlabAllocator extends Allocator
     {
         long size = unslabbed.get();
         // only count the regions that have not been GCed yet
-        for (WeakReference<Region> regionWeakReference : regionTracker) {
-            size += (regionWeakReference.get() != null) ? REGION_SIZE : 0;
+        Iterator<WeakReference<Region>> regionIterator = regionTracker.iterator();
+        while (regionIterator.hasNext()) {
+            WeakReference<Region> next = regionIterator.next();
+            if(next.get() != null) {
+                size += REGION_SIZE;
+            } else {
+                regionIterator.remove();
+            }
         }
         return size;
     }
